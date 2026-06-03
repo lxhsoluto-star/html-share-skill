@@ -1,0 +1,5 @@
+node_modules/
+EXTEND.md
+html-share/
+.DS_Store
+*.log

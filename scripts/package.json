@@ -1,0 +1,12 @@
+{
+  "name": "html-share-skill",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@resvg/resvg-wasm": "^2.6.2",
+    "linkedom": "^0.18.5",
+    "qrcode": "^1.5.4",
+    "satori": "^0.12.2"
+  }
+}
