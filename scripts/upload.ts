@@ -44,6 +44,13 @@ export interface UploadResult {
   _status?: number;
 }
 
+// Total attempts and backoff between them (ms). Transient failures (network
+// errors, 429, 5xx) are retried; business errors (4xx) are returned as-is.
+const MAX_ATTEMPTS = 3;
+const BACKOFF_MS = [500, 1500];
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 export async function uploadShare(
   apiBase: string,
   token: string,
@@ -53,29 +60,66 @@ export async function uploadShare(
   slug: string | null,
   og: Buffer | null,
 ): Promise<UploadResult> {
-  const form = new FormData();
-  form.append("meta", JSON.stringify(meta));
-  form.append("html", html);
-  for (const a of uploads) {
-    form.append(
-      a.hash,
-      new Blob([new Uint8Array(a.buf)], { type: a.mime }),
-      a.path.split("/").pop() || "asset",
-    );
-  }
-  if (og) {
-    form.append("og", new Blob([new Uint8Array(og)], { type: "image/png" }), "og.png");
-  }
-
   const url = slug
     ? `${apiBase}/api/cli/shares/${slug}`
     : `${apiBase}/api/cli/shares`;
-  const res = await fetch(url, {
-    method: slug ? "PUT" : "POST",
-    headers: { Authorization: `Bearer ${token}` },
-    body: form,
-  });
-  const json = (await res.json().catch(() => ({}))) as UploadResult;
-  json._status = res.status;
-  return json;
+
+  // Rebuild the form each attempt — a FormData body stream is consumed by fetch
+  // and can't be reused across retries.
+  const buildForm = (): FormData => {
+    const form = new FormData();
+    form.append("meta", JSON.stringify(meta));
+    form.append("html", html);
+    for (const a of uploads) {
+      form.append(
+        a.hash,
+        new Blob([new Uint8Array(a.buf)], { type: a.mime }),
+        a.path.split("/").pop() || "asset",
+      );
+    }
+    if (og) {
+      form.append("og", new Blob([new Uint8Array(og)], { type: "image/png" }), "og.png");
+    }
+    return form;
+  };
+
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const res = await fetch(url, {
+        method: slug ? "PUT" : "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: buildForm(),
+      });
+      // Server-side transient failure — retry unless this was the last attempt.
+      if ((res.status === 429 || res.status >= 500) && attempt < MAX_ATTEMPTS) {
+        process.stderr.write(
+          `html-share: upload got ${res.status}, retrying (${attempt}/${MAX_ATTEMPTS - 1})…\n`,
+        );
+        await sleep(BACKOFF_MS[attempt - 1]);
+        continue;
+      }
+      const json = (await res.json().catch(() => ({}))) as UploadResult;
+      json._status = res.status;
+      return json;
+    } catch (err) {
+      // Network-level failure (DNS, reset, timeout) — fetch threw.
+      lastErr = err;
+      if (attempt < MAX_ATTEMPTS) {
+        process.stderr.write(
+          `html-share: upload network error, retrying (${attempt}/${MAX_ATTEMPTS - 1})…\n`,
+        );
+        await sleep(BACKOFF_MS[attempt - 1]);
+        continue;
+      }
+    }
+  }
+
+  return {
+    error: "NETWORK_ERROR",
+    message: `Upload failed after ${MAX_ATTEMPTS} attempts: ${
+      lastErr instanceof Error ? lastErr.message : String(lastErr)
+    }`,
+    _status: 0,
+  };
 }
