@@ -1,5 +1,7 @@
 # html-share skill
 
+🌐 **Homepage: [sharehtml.net](https://sharehtml.net)**
+
 Turn a single-page **HTML file into a short URL + QR code** from your terminal or
 agent. Local images are uploaded (or inlined when tiny) and their references
 rewritten automatically; a mobile viewport is added if missing; a **1200×630
