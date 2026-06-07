@@ -28,7 +28,7 @@ $ bun scripts/main.ts ./report.html
 **With the [`skills`](https://github.com/vercel-labs/skills) CLI (recommended):**
 
 ```bash
-npx skills add sharehtml/html-share-skill
+npx skills add lxhsoluto-star/html-share-skill
 ```
 
 This installs the skill into your agent's skills directory (`~/.claude/skills/` for
@@ -37,7 +37,7 @@ Claude Code). List or update later with `npx skills list` / `npx skills update`.
 **Manual:**
 
 ```bash
-git clone https://github.com/sharehtml/html-share-skill ~/.claude/skills/html-share
+git clone https://github.com/lxhsoluto-star/html-share-skill ~/.claude/skills/html-share
 # or clone anywhere and symlink the folder into your .claude/skills directory
 ```
 
@@ -146,7 +146,7 @@ The script prints a single JSON line on stdout. `status: "ERROR"` carries an
 ## Backend & privacy
 
 - Defaults to the hosted backend `https://sharehtml.net`. Self-host the
-  [html-share worker](https://github.com/sharehtml/html-share) and point the skill
+  [html-share worker](https://github.com/lxhsoluto-star/html-share) and point the skill
   at it with `--api-base` (or set `api_base` in `EXTEND.md`).
 - Shared pages are served from an isolated content origin (`view.sharehtml.net`),
   not the app origin.
