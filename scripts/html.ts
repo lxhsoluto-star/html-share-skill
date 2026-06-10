@@ -5,7 +5,7 @@ import { parseHTML } from "linkedom";
 import { sha256 } from "./shared";
 
 export interface UploadAsset {
-  path: string; // url/r2 path, e.g. "a1b2c3d4/hero.png"
+  path: string; // asset path, e.g. "a1b2c3d4/hero.png"
   hash: string; // full sha-256
   mime: string;
   buf: Buffer;

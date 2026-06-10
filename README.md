@@ -145,9 +145,9 @@ The script prints a single JSON line on stdout. `status: "ERROR"` carries an
 
 ## Backend & privacy
 
-- Defaults to the hosted backend `https://sharehtml.net`. Self-host the
-  [html-share worker](https://github.com/lxhsoluto-star/html-share) and point the skill
-  at it with `--api-base` (or set `api_base` in `EXTEND.md`).
+- Defaults to the hosted backend `https://sharehtml.net`. Any backend that
+  implements the same API can be used instead — point the skill at it with
+  `--api-base` (or set `api_base` in `EXTEND.md`).
 - Shared pages are served from an isolated content origin (`view.sharehtml.net`),
   not the app origin.
 - `EXTEND.md` holds your email + CLI token (a secret) and is gitignored.
