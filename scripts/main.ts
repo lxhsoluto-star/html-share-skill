@@ -87,9 +87,9 @@ async function main() {
       status: "REGISTERED",
       email,
       tier: r.tier,
-      activation_email_sent: r.activation_email_sent,
+      verify_url: r.verify_url,
       message:
-        "Saved email + CLI token. An activation email was sent — clicking it unlocks passwords, longer expiry (up to 90 days) and higher quota.",
+        "Saved email + CLI token. To verify the account (passwords, longer expiry up to 90 days, higher quota), sign in once at the dashboard with this email — a 6-digit code is emailed to you.",
     });
     return;
   }

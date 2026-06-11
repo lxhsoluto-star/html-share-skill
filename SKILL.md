@@ -14,7 +14,7 @@ metadata:
 
 Turn a local single-page HTML file into a **short URL + QR code** that anyone can open. Local images are uploaded (or inlined when tiny) and their references rewritten automatically; remote URLs are left untouched. A mobile viewport is added if missing. A **social-preview image** (1200×630, the page title on a branded card) is generated and OG/Twitter meta is injected, so the link shows a thumbnail when pasted into chat apps. Verified users can pick a **custom short link** (`--slug`).
 
-The **only prerequisite is a bound email** (stored in `EXTEND.md`). Uploads work immediately as the *unverified* tier (7-day expiry, low quota). Activating the email (clicking the emailed link) unlocks the *verified* tier: password protection, longer expiry (up to 90 days), and higher quota.
+The **only prerequisite is a bound email** (stored in `EXTEND.md`). Uploads work immediately as the *unverified* tier (7-day expiry, low quota). Signing in once at the dashboard with the same email (a 6-digit code is emailed) unlocks the *verified* tier: password protection, longer expiry (up to 90 days), and higher quota.
 
 ## Script Directory
 
@@ -32,7 +32,7 @@ On a `share` run, if no email is bound the script prints `{"status":"NEEDS_EMAIL
 
 1. Ask the user for their email using **AskUserQuestion** (e.g. "Which email should I bind for sharing? It's the only thing needed to upload.").
 2. Run: `${BUN_X} {baseDir}/scripts/main.ts register --email <address>`
-3. On `{"status":"REGISTERED"}`, tell the user **verbatim**: an activation email was sent — clicking it (and it's optional) unlocks password protection, longer expiry (up to 90 days), and higher quota. They can share right now without activating.
+3. On `{"status":"REGISTERED"}`, tell the user **verbatim**: they can share right now. Optionally, signing in once at the `verify_url` dashboard with this email (a 6-digit code is emailed) verifies the account and unlocks password protection, longer expiry (up to 90 days), and higher quota.
 
 ## Usage
 
@@ -49,7 +49,7 @@ ${BUN_X} {baseDir}/scripts/main.ts ./report.html --update
 # Force a brand-new link instead of updating
 ${BUN_X} {baseDir}/scripts/main.ts ./report.html --new
 
-# Activated users: password-protect / set expiry / custom short link
+# Verified users: password-protect / set expiry / custom short link
 ${BUN_X} {baseDir}/scripts/main.ts ./report.html --password "s3cret" --expiry 30
 ${BUN_X} {baseDir}/scripts/main.ts ./launch.html --slug q3-launch
 ```
@@ -84,7 +84,7 @@ ${BUN_X} {baseDir}/scripts/main.ts ./launch.html --slug q3-launch
    - `UNCHANGED` → content identical to a prior share; present the existing link/QR.
    - `OK` → present results (below).
    - `ERROR` → see Error Cases.
-4. **Present to the user**: the short **URL** (note if `customSlug` is true that it's their chosen link), the **QR** (print the `qrAscii` block so they can scan from the terminal; mention the saved `qr.png`), the **expiry** date and **tier**, and that a **social-preview card** (`ogUrl`) was generated so the link shows a thumbnail in chat apps. If `missingAssets` is non-empty, list them (referenced files that weren't found). If `tier` is `unverified`, gently remind them activation enables password protection, longer expiry, and custom short links.
+4. **Present to the user**: the short **URL** (note if `customSlug` is true that it's their chosen link), the **QR** (print the `qrAscii` block so they can scan from the terminal; mention the saved `qr.png`), the **expiry** date and **tier**, and that a **social-preview card** (`ogUrl`) was generated so the link shows a thumbnail in chat apps. If `missingAssets` is non-empty, list them (referenced files that weren't found). If `tier` is `unverified`, gently remind them that signing in once at the dashboard (email code) verifies the account and enables password protection, longer expiry, and custom short links.
 
 ## Output Directory
 
@@ -112,14 +112,14 @@ html-share/
 |---------|------------------|
 | `NEEDS_EMAIL` | No bound email → ask + `register` |
 | `TOKEN_INVALID` (http 401) | Token revoked/expired → re-`register` |
-| `QUOTA_EXCEEDED` (403) | Tier quota hit → suggest activation or deleting old shares |
-| `PASSWORD_NOT_ALLOWED` (403) | Password needs verified tier → tell user to activate |
+| `QUOTA_EXCEEDED` (403) | Tier quota hit → suggest verifying (dashboard sign-in) or deleting old shares |
+| `PASSWORD_NOT_ALLOWED` (403) | Password needs verified tier → tell user to verify (sign in at the dashboard) |
 | `PAYLOAD_TOO_LARGE` (413) | Over per-share size limit |
 | `NOT_HTML` | Input isn't an `.html` file |
 | `BAD_ASSET` | A referenced asset has a disallowed type |
 | `SLUG_TAKEN` (409) | Requested `--slug` already exists → suggest another |
 | `SLUG_INVALID` (400) | `--slug` isn't 3–48 lowercase/digits/hyphens, or is reserved |
-| `SLUG_NOT_ALLOWED` (403) | Custom slug needs verified tier → tell user to activate |
+| `SLUG_NOT_ALLOWED` (403) | Custom slug needs verified tier → tell user to verify (sign in at the dashboard) |
 | `BLOCKED_CONTENT` (422) | Abuse detection rejected the page (phishing/malware signals) — don't retry; tell the user |
 | `DISPOSABLE_EMAIL` (400) | Disposable email at register → ask for a real address |
 

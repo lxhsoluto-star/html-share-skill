@@ -4,7 +4,7 @@ export interface RegisterResult {
   token?: string;
   email?: string;
   tier?: string;
-  activation_email_sent?: boolean;
+  verify_url?: string;
   error?: string;
   message?: string;
 }

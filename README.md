@@ -61,9 +61,9 @@ bun scripts/main.ts register --email you@example.com
 ```
 
 You can share immediately as the **unverified** tier (7-day expiry, low quota, no
-password). An activation email is sent — clicking it (optional) unlocks the
-**verified** tier: password protection, expiry up to 90 days, custom short links,
-and higher quota.
+password). To unlock the **verified** tier (password protection, expiry up to
+90 days, custom short links, higher quota), sign in once at the dashboard with
+the same email — a 6-digit code is emailed to you.
 
 > Your email + a CLI token are stored in `EXTEND.md` next to `SKILL.md`. The token
 > is a secret — `EXTEND.md` is gitignored.
@@ -132,14 +132,14 @@ The script prints a single JSON line on stdout. `status: "ERROR"` carries an
 |---------|------------------|
 | `NEEDS_EMAIL` | No bound email → run `register` |
 | `TOKEN_INVALID` (401) | Token revoked/expired → re-`register` |
-| `QUOTA_EXCEEDED` (403) | Tier quota hit → activate or delete old shares |
-| `PASSWORD_NOT_ALLOWED` (403) | Password needs verified tier → activate |
+| `QUOTA_EXCEEDED` (403) | Tier quota hit → verify (dashboard sign-in) or delete old shares |
+| `PASSWORD_NOT_ALLOWED` (403) | Password needs verified tier → verify via dashboard sign-in |
 | `PAYLOAD_TOO_LARGE` (413) | Over per-share size limit |
 | `NOT_HTML` | Input isn't an `.html` file |
 | `BAD_ASSET` | A referenced asset has a disallowed type |
 | `SLUG_TAKEN` (409) | Requested `--slug` already exists |
 | `SLUG_INVALID` (400) | `--slug` isn't 3–48 `a-z0-9-`, or is reserved |
-| `SLUG_NOT_ALLOWED` (403) | Custom slug needs verified tier → activate |
+| `SLUG_NOT_ALLOWED` (403) | Custom slug needs verified tier → verify via dashboard sign-in |
 | `BLOCKED_CONTENT` (422) | Rejected by abuse detection (phishing/malware) — don't retry |
 | `DISPOSABLE_EMAIL` (400) | Disposable email at register → use a real address |
 
