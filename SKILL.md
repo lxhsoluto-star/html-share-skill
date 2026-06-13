@@ -73,6 +73,7 @@ ${BUN_X} {baseDir}/scripts/main.ts ./launch.html --slug q3-launch
 | `--inline-threshold <bytes>` | Inline assets ≤ this size as data URIs | 4096 |
 | `--output-dir <dir>` | Base output folder | `html-share` |
 | `--api-base <url>` | Override backend base URL | from EXTEND.md |
+| `--pretty` | Human-readable output (for demos/manual runs); JSON is the default the agent parses | JSON |
 
 ## Workflow
 

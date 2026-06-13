@@ -12,7 +12,7 @@ import {
   recordEntry,
   writeShareDir,
 } from "./storage";
-import { emit, fail, sha256, slugify } from "./shared";
+import { emit, fail, setPretty, sha256, slugify } from "./shared";
 
 const scriptsDir = dirname(fileURLToPath(import.meta.url));
 
@@ -31,10 +31,11 @@ interface Flags {
   inlineThreshold?: number;
   outputDir?: string;
   apiBase?: string;
+  pretty: boolean;
 }
 
 function parseArgs(argv: string[]): { cmd: string; positional: string[]; flags: Flags } {
-  const flags: Flags = { update: false, new: false, removePassword: false, noQr: false, noMobileFix: false, noOg: false };
+  const flags: Flags = { update: false, new: false, removePassword: false, noQr: false, noMobileFix: false, noOg: false, pretty: false };
   const positional: string[] = [];
   let cmd = "share";
   let i = 0;
@@ -59,7 +60,8 @@ function parseArgs(argv: string[]): { cmd: string; positional: string[]; flags: 
       case "--inline-threshold": flags.inlineThreshold = parseInt(argv[++i], 10); break;
       case "--output-dir": flags.outputDir = argv[++i]; break;
       case "--api-base": flags.apiBase = argv[++i]; break;
-      case "--json": break; // always JSON
+      case "--pretty": flags.pretty = true; break;
+      case "--json": break; // JSON is the default for agents
       default:
         if (!a.startsWith("-")) positional.push(a);
     }
@@ -69,6 +71,7 @@ function parseArgs(argv: string[]): { cmd: string; positional: string[]; flags: 
 
 async function main() {
   const { cmd, positional, flags } = parseArgs(process.argv.slice(2));
+  setPretty(flags.pretty);
   const cfg = loadConfig(scriptsDir);
   const apiBase = flags.apiBase || cfg.api_base;
 
@@ -87,9 +90,9 @@ async function main() {
       status: "REGISTERED",
       email,
       tier: r.tier,
-      verify_url: r.verify_url,
+      activation_email_sent: r.activation_email_sent,
       message:
-        "Saved email + CLI token. To verify the account (passwords, longer expiry up to 90 days, higher quota), sign in once at the dashboard with this email — a 6-digit code is emailed to you.",
+        "Saved email + CLI token. An activation email was sent — clicking it unlocks passwords, longer expiry (up to 90 days) and higher quota.",
     });
     return;
   }

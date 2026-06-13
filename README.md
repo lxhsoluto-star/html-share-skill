@@ -13,15 +13,12 @@ This is a [Claude Code](https://code.claude.com) / agent **skill**. It talks to 
 hosted backend at **[sharehtml.net](https://sharehtml.net)** (or your own, via
 `--api-base`). The only prerequisite is a bound email.
 
-```text
-$ bun scripts/main.ts ./report.html
-  ✓ https://sharehtml.net/s/q7x2k9
-  ▄▄▄▄▄▄▄  ▄  ▄▄ ▄▄▄▄▄▄▄
-  █ ▄▄▄ █ ▀█▄▀▄ █ ▄▄▄ █     scan to open · expires in 7 days
-  █ ███ █ ▄█ ▀▀ █ ███ █     tier: unverified
-  ▀▀▀▀▀▀▀ █▄▀▄█ ▀▀▀▀▀▀▀     social card: …/s/q7x2k9/og.png
-  …
-```
+<p align="center">
+  <img src="assets/demo.gif" alt="One command turns an HTML file into a short link, a scannable QR code, and a social-preview card" width="560">
+</p>
+
+> The terminal output above is real (`--pretty`). Agents get the same result as a
+> single JSON line; `--pretty` is just the human-readable rendering.
 
 ## Install
 
@@ -104,6 +101,7 @@ bun scripts/main.ts ./launch.html --slug q3-launch
 | `--inline-threshold <bytes>` | Inline assets ≤ this size as data URIs | 4096 |
 | `--output-dir <dir>` | Base output folder | `html-share` |
 | `--api-base <url>` | Override backend base URL | from `EXTEND.md` |
+| `--pretty` | Human-readable output (link + QR + card) instead of JSON | JSON |
 
 Remote references (`http(s)://`, `//`, `data:`) are never modified — only local
 files are uploaded or inlined.
