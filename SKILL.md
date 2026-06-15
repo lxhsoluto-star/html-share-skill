@@ -85,7 +85,7 @@ ${BUN_X} {baseDir}/scripts/main.ts ./launch.html --slug q3-launch
    - `UNCHANGED` → content identical to a prior share; present the existing link/QR.
    - `OK` → present results (below).
    - `ERROR` → see Error Cases.
-4. **Present to the user**: the short **URL** (note if `customSlug` is true that it's their chosen link), the **QR** (print the `qrAscii` block so they can scan from the terminal; mention the saved `qr.png`), the **expiry** date and **tier**, and that a **social-preview card** (`ogUrl`) was generated so the link shows a thumbnail in chat apps. If `missingAssets` is non-empty, list them (referenced files that weren't found). If `tier` is `unverified`, gently remind them that signing in once at the dashboard (email code) verifies the account and enables password protection, longer expiry, and custom short links.
+4. **Present to the user**: the short **URL** (note if `customSlug` is true that it's their chosen link), the **QR** (print the `qrAscii` block so they can scan from the terminal; mention the saved `qr.png`), the **expiry** date and **tier**, and that a **social-preview card** (`ogUrl`) was generated so the link shows a thumbnail in chat apps. If `missingAssets` is non-empty, list them (referenced files that weren't found). If `tier` is `unverified`, the result carries a `hint` field and an `appUrl` — relay it: tell the user they can sign in at `appUrl` (with the code emailed to them) to unlock password protection, custom short links, and longer expiry (up to 90 days).
 
 ## Output Directory
 

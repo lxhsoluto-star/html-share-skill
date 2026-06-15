@@ -86,13 +86,14 @@ async function main() {
     cfg.cli_token = r.token!;
     cfg.api_base = apiBase;
     saveConfig(scriptsDir, cfg);
+    const verifyUrl = r.verify_url || apiBase;
     emit({
       status: "REGISTERED",
       email,
       tier: r.tier,
-      activation_email_sent: r.activation_email_sent,
+      verifyUrl,
       message:
-        "Saved email + CLI token. An activation email was sent — clicking it unlocks passwords, longer expiry (up to 90 days) and higher quota.",
+        `Saved email + CLI token. You can share right away. To unlock password protection, custom links, longer expiry (up to 90 days) and higher quota, open ${verifyUrl} and sign in with the code emailed to you.`,
     });
     return;
   }
@@ -233,6 +234,11 @@ async function main() {
     updatedAt: Math.floor(Date.now() / 1000),
   });
 
+  // The app home is the same origin as the API base (content lives on a
+  // separate origin). Surface it as the place to activate the account.
+  const appUrl = apiBase.replace(/\/+$/, "");
+  const unverified = result.tier === "unverified";
+
   emit({
     status: "OK",
     slug: result.slug,
@@ -251,6 +257,10 @@ async function main() {
     dir,
     qrPng,
     qrAscii: flags.noQr ? "" : await terminalQr(result.url!),
+    appUrl,
+    hint: unverified
+      ? `Tell the user: sign in at ${appUrl} (with the code emailed to you) to unlock password protection, custom links, and longer expiry — up to 90 days.`
+      : undefined,
   });
 }
 

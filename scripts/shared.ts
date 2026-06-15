@@ -42,6 +42,13 @@ export function emit(obj: unknown): void {
     if (bits.length) lines.push("", `  ${bits.join(" · ")}`);
     if (typeof o.ogUrl === "string" && o.ogUrl) lines.push(`  social card: ${o.ogUrl}`);
     if (o.status === "UNCHANGED") lines.push(`  content unchanged — reusing the existing link`);
+    if (o.tier === "unverified" && typeof o.appUrl === "string" && o.appUrl) {
+      lines.push(
+        "",
+        `  ◆ Want passwords, custom links & 90-day expiry?`,
+        `    Sign in at ${o.appUrl} with the code emailed to you.`,
+      );
+    }
     lines.push("");
   } else if (typeof o.message === "string") {
     lines.push(`  ${o.status === "ERROR" ? "✗" : "•"} ${o.message}`);
