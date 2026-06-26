@@ -21,6 +21,49 @@ export async function registerEmail(
   return (await res.json().catch(() => ({}))) as RegisterResult;
 }
 
+export interface TierLimits {
+  maxActiveShares: number;
+  maxStorageBytes: number;
+  maxShareBytes: number;
+  maxAssets: number;
+  defaultExpiryDays: number;
+  maxExpiryDays: number | null;
+  allowPassword: boolean;
+  allowCustomSlug: boolean;
+}
+
+export interface WhoamiResult {
+  email?: string;
+  tier?: number; // 0 = unverified, 1 = verified, 2 = pro
+  usage?: { active_shares: number; storage_bytes: number };
+  limits?: TierLimits;
+  error?: string;
+  message?: string;
+  _status?: number;
+}
+
+// Best-effort: returns live tier/usage/limits, or an error result the caller can
+// ignore (pre-flight is advisory; the server is the source of truth).
+export async function fetchWhoami(
+  apiBase: string,
+  token: string,
+): Promise<WhoamiResult> {
+  try {
+    const res = await fetch(`${apiBase}/api/cli/whoami`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const json = (await res.json().catch(() => ({}))) as WhoamiResult;
+    json._status = res.status;
+    return json;
+  } catch (err) {
+    return {
+      error: "NETWORK_ERROR",
+      message: err instanceof Error ? err.message : String(err),
+      _status: 0,
+    };
+  }
+}
+
 export interface ShareMeta {
   docHash: string;
   title: string | null;

@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { loadConfig, saveConfig } from "./config";
 import { processHtml } from "./html";
 import { generateOg } from "./og";
-import { registerEmail, uploadShare, type ShareMeta } from "./upload";
+import { fetchWhoami, registerEmail, uploadShare, type ShareMeta } from "./upload";
 import { saveQr, terminalQr } from "./qr";
 import {
   lookupByHash,
@@ -15,6 +15,11 @@ import {
 import { emit, fail, setPretty, sha256, slugify } from "./shared";
 
 const scriptsDir = dirname(fileURLToPath(import.meta.url));
+
+// Numeric tier (from /api/cli/whoami) → human label.
+const TIER_LABELS = ["unverified", "verified", "pro"];
+const tierLabel = (t: number | undefined): string =>
+  typeof t === "number" && TIER_LABELS[t] ? TIER_LABELS[t] : "unverified";
 
 interface Flags {
   email?: string;
@@ -39,8 +44,8 @@ function parseArgs(argv: string[]): { cmd: string; positional: string[]; flags: 
   const positional: string[] = [];
   let cmd = "share";
   let i = 0;
-  if (argv[0] && !argv[0].startsWith("-") && argv[0] === "register") {
-    cmd = "register";
+  if (argv[0] && !argv[0].startsWith("-") && (argv[0] === "register" || argv[0] === "whoami")) {
+    cmd = argv[0];
     i = 1;
   }
   for (; i < argv.length; i++) {
@@ -105,6 +110,33 @@ async function main() {
       api_base: apiBase,
       message:
         "No bound email. Ask the user for their email, then run: register --email <address>",
+    });
+    return;
+  }
+
+  if (cmd === "whoami") {
+    const w = await fetchWhoami(apiBase, cfg.cli_token);
+    if (w.error || !w.limits) {
+      fail(w.error || "WHOAMI_FAILED", w.message || "Could not fetch account info", {
+        http: w._status,
+      });
+    }
+    const used = w.usage?.active_shares ?? 0;
+    emit({
+      status: "WHOAMI",
+      email: w.email ?? cfg.email,
+      tier: tierLabel(w.tier),
+      activeShares: used,
+      maxActiveShares: w.limits!.maxActiveShares,
+      remainingShares: Math.max(0, w.limits!.maxActiveShares - used),
+      maxShareBytes: w.limits!.maxShareBytes,
+      maxAssets: w.limits!.maxAssets,
+      maxExpiryDays: w.limits!.maxExpiryDays,
+      allowPassword: w.limits!.allowPassword,
+      allowCustomSlug: w.limits!.allowCustomSlug,
+      message:
+        `${tierLabel(w.tier)} tier — ${used}/${w.limits!.maxActiveShares} active shares used, ` +
+        `max ${Math.round(w.limits!.maxShareBytes / (1024 * 1024))} MB/share.`,
     });
     return;
   }
@@ -182,6 +214,36 @@ async function main() {
       title: flags.ogTitle || proc.title || basename(abs),
       domain: host,
     });
+  }
+
+  // Pre-flight size check (best-effort, advisory — the server is the source of
+  // truth). Turns a post-upload 413 into an actionable list of the heaviest
+  // files. The server injects a little extra HTML (OG/feedback/analytics), so
+  // the real payload is slightly larger than this estimate; we therefore only
+  // hard-fail when the estimate already exceeds the cap (no false positives).
+  // whoami failures (old backend / offline) are ignored — fall through to upload.
+  const who = await fetchWhoami(apiBase, cfg.cli_token);
+  if (who.limits) {
+    const htmlBytes = Buffer.byteLength(proc.html, "utf8");
+    const assetBytes = proc.uploads.reduce((n, u) => n + u.buf.byteLength, 0);
+    const ogBytes = og ? og.byteLength : 0;
+    const estBytes = htmlBytes + assetBytes + ogBytes;
+    const limit = who.limits.maxShareBytes;
+    if (estBytes > limit) {
+      const mb = (n: number) => (n / (1024 * 1024)).toFixed(2);
+      const heaviestAssets = [...proc.uploads]
+        .sort((a, b) => b.buf.byteLength - a.buf.byteLength)
+        .slice(0, 5)
+        .map((u) => ({ path: u.path, mb: +(u.buf.byteLength / (1024 * 1024)).toFixed(2) }));
+      const assetBudget = Math.max(0, limit - htmlBytes - ogBytes);
+      fail(
+        "PAYLOAD_TOO_LARGE",
+        `Share is ~${mb(estBytes)} MB but the ${tierLabel(who.tier)} tier allows ` +
+          `${mb(limit)} MB/share. Shrink the largest assets to ~${mb(assetBudget)} MB total` +
+          (who.tier === 0 ? `, or verify your account to raise the cap to 20 MB.` : `.`),
+        { estBytes, limitBytes: limit, htmlBytes, assetBytes, ogBytes, heaviestAssets },
+      );
+    }
   }
 
   const result = await uploadShare(

@@ -34,11 +34,31 @@ On a `share` run, if no email is bound the script prints `{"status":"NEEDS_EMAIL
 2. Run: `${BUN_X} {baseDir}/scripts/main.ts register --email <address>`
 3. On `{"status":"REGISTERED"}`, tell the user **verbatim**: they can share right now. Optionally, signing in once at the `verify_url` dashboard with this email (a 6-digit code is emailed) verifies the account and unlocks password protection, longer expiry (up to 90 days), and higher quota.
 
+## Tiers & limits
+
+Hard limits are enforced server-side. **Check the live state with `whoami`** instead of guessing — it returns the bound account's tier, used/remaining active shares, and caps. Source of truth: `src/config.ts`.
+
+| Limit | Unverified | Verified | Pro |
+|-------|-----------:|---------:|----:|
+| Active shares | **3** | 50 | 500 |
+| Per-share size | **3 MB** | 20 MB | 100 MB |
+| Total storage | 10 MB | 200 MB | 5 GB |
+| Assets / share | 15 | 100 | 300 |
+| Default expiry | **7 d** | 30 d | 30 d |
+| Max expiry | 7 d | 90 d | never |
+| Password / custom slug | ✗ | ✓ | ✓ |
+| Burn-after-reading | ✗ | ✗ | ✓ |
+
+Unverified is the default after `register`; signing in once at the dashboard (a 6-digit code is emailed) lifts the account to verified. Before sharing large/many files, run `whoami` — if `remainingShares` is 0 you'll hit `QUOTA_EXCEEDED`, and if assets exceed `maxShareBytes` the script now blocks **before** upload (see Pre-flight below).
+
 ## Usage
 
 ```bash
 # Share an HTML file (the common case)
 ${BUN_X} {baseDir}/scripts/main.ts ./report.html
+
+# Check the bound account's tier, used/remaining shares, and size caps
+${BUN_X} {baseDir}/scripts/main.ts whoami
 
 # First-time email binding
 ${BUN_X} {baseDir}/scripts/main.ts register --email you@example.com
@@ -60,6 +80,7 @@ ${BUN_X} {baseDir}/scripts/main.ts ./launch.html --slug q3-launch
 |--------|-------------|---------|
 | `<path.html>` | Path to the HTML file to share | required |
 | `register --email <e>` | Bind an email (first-time setup) | |
+| `whoami` | Print live tier, used/remaining active shares, and size caps (JSON) | |
 | `--update` | Update the share previously made from this file (stable URL/QR) | |
 | `--new` | Force a new share even if this file was shared before | |
 | `--password <p>` | Password-protect the share (verified tier only) | |
@@ -101,6 +122,10 @@ html-share/
 
 `.index.json` is keyed by content hash and source path, so re-running on the same file reuses the prior link (or offers `--update`).
 
+## Pre-flight size check
+
+Before uploading, the script estimates the payload (processed HTML + assets + OG image) and compares it to the tier's `maxShareBytes` (fetched live via `whoami`). If it's already over, it fails fast with `PAYLOAD_TOO_LARGE` **without uploading**, and the JSON carries `estBytes`, `limitBytes`, and `heaviestAssets` (top 5 by size, in MB). Relay that to the user: name the biggest files and how far over the cap they are, so they can compress/drop them (or verify the account for a higher cap). The check is advisory — if `whoami` is unreachable, the script falls through and lets the server enforce the limit.
+
 ## Re-upload / Update
 
 - Identical content → `UNCHANGED`, reuses the link (idempotent).
@@ -113,9 +138,9 @@ html-share/
 |---------|------------------|
 | `NEEDS_EMAIL` | No bound email → ask + `register` |
 | `TOKEN_INVALID` (http 401) | Token revoked/expired → re-`register` |
-| `QUOTA_EXCEEDED` (403) | Tier quota hit → suggest verifying (dashboard sign-in) or deleting old shares |
 | `PASSWORD_NOT_ALLOWED` (403) | Password needs verified tier → tell user to verify (sign in at the dashboard) |
-| `PAYLOAD_TOO_LARGE` (413) | Over per-share size limit |
+| `PAYLOAD_TOO_LARGE` (413) | Over per-share size limit. Caught pre-flight when possible; JSON has `estBytes`/`limitBytes`/`heaviestAssets` — name the biggest files to shrink |
+| `QUOTA_EXCEEDED` (403) | Active-share or storage cap hit — run `whoami` to see used/remaining; delete a share in the dashboard or verify the account |
 | `NOT_HTML` | Input isn't an `.html` file |
 | `BAD_ASSET` | A referenced asset has a disallowed type |
 | `SLUG_TAKEN` (409) | Requested `--slug` already exists → suggest another |
